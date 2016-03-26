@@ -1,17 +1,25 @@
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 int lightSensor = A0;
 int tempRead = A1;
 int doorClosed = true;
 int doorOpenedRecently = true;
 int lightValue = 0;
+int beerDelayCount = 0;
+int beerDisplayFinished = false;
+int beerInFridge = false;
+int tempDelayCount;
 
 void setup() {
   Serial.begin(9600);
   pinMode(lightSensor, INPUT);
   pinMode(tempRead, INPUT);
+  lcd.begin(16, 2);
 }
 
 void loop() {
-
+  
+  beerLoopBegin:
   // Light evaluation
   // Periodically displayed on Shield
   
@@ -26,13 +34,19 @@ void loop() {
   
   if(lightValue > 0){ // Use light value for evaluations
     // Print "no beer in fridge" on display
-    delay(5000); // Wait for the user to read the message, go forward after
+    beerInFridge = false;
+    delay(10); // Wait for the user to read the message, go forward after
   }
   else{
-    // No worries, there is beer in the fridge
+    beerInFridge = true;
   }
 
-
+  if(beerDelayCount <= 500 && beerInFridge){
+    beerDelayCount += 1;
+    goto beerLoopBegin;
+  }
+  tempDelayCount = 0;
+  tempLoopBegin:
   
   // Temperature evaluation
   // Mostly displayed on Shield
@@ -43,8 +57,29 @@ void loop() {
   Serial.print("  "); // Print to display
   Serial.write(176); // Print to display
   Serial.println("C"); // Print to display
-  delay(5000);
 
+  //Shield display
+  
+  lcd.setCursor(0, 0);
+  lcd.print("Temperatura");
+  lcd.setCursor(0, 1);
+  lcd.print(temperatura );
+  lcd.setCursor(5, 1);
+  lcd.print((char)176);
+  lcd.setCursor(6, 1);
+  lcd.print('C');
+  
+  delay(10);
+  
+  if(tempDelayCount <= 500){
+    goto tempLoopBegin;
+  }
+  
+  if(beerInFridge){
+    beerDelayCount = 0;
+  }
+  
+  
   // To add engine code here
 
   // To add LED cipher code here
